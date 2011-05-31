@@ -1,21 +1,26 @@
 package de.kanwas.audio.mp3;
 
-import java.io.File;
-import java.util.ArrayList;
+import java.awt.Component;
 import java.util.List;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.table.TableColumn;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 
 import net.miginfocom.swing.MigLayout;
-import de.kanwas.audio.commons.Category;
+import de.kanwas.audio.commons.MP3File;
+import de.kanwas.audio.mp3.table.MP3CategoryCellEditor;
+import de.kanwas.audio.mp3.table.MP3TableCellCenderer;
 import de.kanwas.audio.mp3.table.MP3TableModel;
-import de.kanwas.audio.mp3.table.Mp3CategoryCellEditor;
+import de.kanwas.audio.mp3.tree.MP3ContentNode;
 import de.kanwas.audio.mp3.tree.Mp3TreeModel;
 
 /*
@@ -31,10 +36,6 @@ public class MP3CatMain extends JPanel {
   /** version number */
   public static final String VER = "$Revision$";
 
-  private final static String CATEGORYPATH=""; 
-  private final static String MUSICPATH=""; 
-  private final static String DATABASEPATH=""; 
-  
   private JTree dirTree;
 
   private JScrollPane treeScrollPane;
@@ -43,27 +44,51 @@ public class MP3CatMain extends JPanel {
 
   private JScrollPane tableScrollPane;
 
-  private TreeNode rootNode = new DefaultMutableTreeNode("Root");
+  private DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root");
 
-  private List<Category> categories;
+  private MP3DataBroker dataBroker;
+
+  private MP3TableModel mp3TableModel;
+
+  private JSplitPane splitPane;
 
   public MP3CatMain() {
-
-    this.categories = new ArrayList<Category>();
-    this.categories.add(new Category("Party"));
-    this.categories.add(new Category("Grillen"));
-    this.categories.add(new Category("Slow"));    
+    initData();
     initComponents();
   }
-  
+
   public void initData() {
-    this.dataBroker = new MP3DataBroker(, VER, VER);
+    PropertyHandler propertyHandler = PropertyHandler.getInstance();
+    this.dataBroker = new MP3DataBroker(propertyHandler.getCategoryPath(),
+                                        propertyHandler.getMusicPath(),
+                                        propertyHandler.getDatabasePath());
+  }
+
+  public void setMP3Path(String mp3Path) {
+    this.getMP3DataBroker().setMp3Path(mp3Path);
+  }
+
+  public MP3DataBroker getMP3DataBroker() {
+    return this.dataBroker;
   }
 
   private void initComponents() {
-    setLayout(new MigLayout("", "12lp![fill][grow,fill]12lp!", "[grow,fill]"));
-    add(getTreeScrollPane(), "cell 0 0");
-    add(getTableScrollPane(), "cell 1 0");
+    setLayout(new MigLayout("", "12lp![grow,fill]12lp!", "[grow,fill]"));
+    add(getSplitPane(), "cell 0 0");
+    // add(getTreeScrollPane(), "cell 0 0");
+    // add(getTableScrollPane(), "cell 1 0");
+  }
+
+  /**
+   * @return
+   */
+  private Component getSplitPane() {
+    if (this.splitPane == null) {
+      this.splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+      this.splitPane.setLeftComponent(getTreeScrollPane());
+      this.splitPane.setRightComponent(getTableScrollPane());
+    }
+    return splitPane;
   }
 
   public JScrollPane getTreeScrollPane() {
@@ -76,20 +101,35 @@ public class MP3CatMain extends JPanel {
 
   private JTree getDirTree() {
     if (this.dirTree == null) {
-      this.dirTree = new JTree(new Mp3TreeModel(rootNode));
+      Mp3TreeModel model = new Mp3TreeModel(rootNode);
+      model.setMP3Data(this.getMP3DataBroker().getMP3Collection());
+      this.dirTree = new JTree(model);
+      this.dirTree.addTreeSelectionListener(new TreeSelectionListener(){
+
+        @Override
+        public void valueChanged(TreeSelectionEvent e) {
+          TreePath path = e.getPath();
+          Object o = path.getLastPathComponent();
+          if (o instanceof MP3ContentNode) {
+            MP3ContentNode c = (MP3ContentNode)o;
+            int resetContent = 0;
+            if (MP3CatMain.this.getTableModel().isDirty()) {
+              resetContent = showWantSaveDialog();
+            }
+            if (resetContent == 0) {
+              saveContent();
+              // } else if (resetContent == 1) {
+              // MP3CatMain.this.getTableModel().resetMP3Data();
+            }
+            if (resetContent == 0 || resetContent == 1) {
+              MP3CatMain.this.getTableModel()
+                .setMP3Data(c.getContent(), MP3CatMain.this.getMP3DataBroker().readFiles());
+            }
+          }
+        }
+      });
     }
     return this.dirTree;
-  }
-
-  private void initTree(File[] files) {
-    TreeNode parent = this.rootNode;
-    TreeNode node = null;
-    for (File file : files) {
-      node = new DefaultMutableTreeNode(file);
-      if (file.isDirectory()) {
-        parent = node;
-      }
-    }
   }
 
   public JScrollPane getTableScrollPane() {
@@ -102,7 +142,8 @@ public class MP3CatMain extends JPanel {
 
   private JTable getMP3Table() {
     if (this.mp3Table == null) {
-      this.mp3Table = new JTable(new MP3TableModel(categories));
+      this.mp3TableModel = new MP3TableModel(this.getMP3DataBroker().getCategories());
+      this.mp3Table = new JTable(this.mp3TableModel);
       this.mp3Table.setCellSelectionEnabled(true);
       this.mp3Table.setAutoscrolls(true);
       this.mp3Table.setAutoCreateRowSorter(true);
@@ -110,9 +151,45 @@ public class MP3CatMain extends JPanel {
 
       for (int i = 0; i < this.mp3Table.getColumnCount(); i++) {
         TableColumn col = this.mp3Table.getColumnModel().getColumn(i);
-        col.setCellEditor(new Mp3CategoryCellEditor());
+        if (i < MP3TableModel.getIndexGeneralColumns()) {
+          col.setPreferredWidth(200);
+        }
+        col.setCellEditor(new MP3CategoryCellEditor());
+        col.setCellRenderer(new MP3TableCellCenderer());
       }
     }
     return mp3Table;
+  }
+
+  private int showWantSaveDialog() {
+    String text = "Möchten Sie die Änderungen speichern?";
+    String title = "Änderungen wurden vorgenommen";
+    Object[] options = new Object[3];
+    options[0] = "Speichern";
+    options[1] = "Verwerfen";
+    options[2] = "Abbrechen";
+    int result = JOptionPane.showOptionDialog(this,
+                                              text,
+                                              title,
+                                              JOptionPane.DEFAULT_OPTION,
+                                              JOptionPane.QUESTION_MESSAGE,
+                                              null,
+                                              options,
+                                              options[0]);
+
+    return result;
+  }
+
+  /**
+   * 
+   */
+  public void saveContent() {
+    List<MP3File> files = getTableModel().getMP3Files();
+    this.getMP3DataBroker().writeFiles(files);
+
+  }
+
+  private MP3TableModel getTableModel() {
+    return this.mp3TableModel;
   }
 }
