@@ -21,7 +21,7 @@ import de.kanwas.audio.mp3.table.MP3CategoryCellEditor;
 import de.kanwas.audio.mp3.table.MP3TableCellCenderer;
 import de.kanwas.audio.mp3.table.MP3TableModel;
 import de.kanwas.audio.mp3.tree.MP3ContentNode;
-import de.kanwas.audio.mp3.tree.Mp3TreeModel;
+import de.kanwas.audio.mp3.tree.MP3TreeModel;
 
 /*
  * icon Systemhaus GmbH
@@ -33,8 +33,14 @@ import de.kanwas.audio.mp3.tree.Mp3TreeModel;
  * @version $Revision$ ($Date$)
  */
 public class MP3CatMain extends JPanel {
+
   /** version number */
   public static final String VER = "$Revision$";
+
+  /**
+   * 
+   */
+  private static final String ROOT_NODE_NAME = "MP3 Sammlung";
 
   private JTree dirTree;
 
@@ -44,13 +50,15 @@ public class MP3CatMain extends JPanel {
 
   private JScrollPane tableScrollPane;
 
-  private DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Root");
+  private DefaultMutableTreeNode rootNode;
 
   private MP3DataBroker dataBroker;
 
   private MP3TableModel mp3TableModel;
 
   private JSplitPane splitPane;
+
+  private MP3TreeModel treeModel;
 
   public MP3CatMain() {
     initData();
@@ -66,6 +74,19 @@ public class MP3CatMain extends JPanel {
 
   public void setMP3Path(String mp3Path) {
     this.getMP3DataBroker().setMp3Path(mp3Path);
+    clearTreeModel();
+    getDirTree().setModel(getTreeModel());
+    getTreeModel().reload();
+    this.getDirTree().updateUI();
+  }
+
+  /**
+   * 
+   */
+  private void clearTreeModel() {
+    this.treeModel = null;
+    rootNode = new DefaultMutableTreeNode(ROOT_NODE_NAME);
+    getMP3DataBroker().clearCollection();
   }
 
   public MP3DataBroker getMP3DataBroker() {
@@ -101,9 +122,8 @@ public class MP3CatMain extends JPanel {
 
   private JTree getDirTree() {
     if (this.dirTree == null) {
-      Mp3TreeModel model = new Mp3TreeModel(rootNode);
-      model.setMP3Data(this.getMP3DataBroker().getMP3Collection());
-      this.dirTree = new JTree(model);
+      rootNode = new DefaultMutableTreeNode(ROOT_NODE_NAME);
+      this.dirTree = new JTree(getTreeModel());
       this.dirTree.addTreeSelectionListener(new TreeSelectionListener(){
 
         @Override
@@ -130,6 +150,14 @@ public class MP3CatMain extends JPanel {
       });
     }
     return this.dirTree;
+  }
+
+  private MP3TreeModel getTreeModel() {
+    if (this.treeModel == null) {
+      treeModel = new MP3TreeModel(rootNode);
+      treeModel.setMP3Data(this.getMP3DataBroker().getMP3Collection());
+    }
+    return treeModel;
   }
 
   public JScrollPane getTableScrollPane() {

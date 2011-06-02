@@ -4,13 +4,13 @@
  */
 package de.kanwas.audio.mp3.dialog;
 
-import java.awt.FileDialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -57,9 +57,7 @@ public class ExportPlaylistDialog extends JDialog {
    * 
    */
   private void initComponents() {
-    getContentPane().setLayout(new MigLayout("",
-                                             "12lp![grow,fill][fill]12lp!",
-                                             "12lp![grow,fill][fill][fill]12lp!"));
+    getContentPane().setLayout(new MigLayout("", "12lp![grow,fill][fill]12lp!", "12lp![grow,fill][fill][fill]12lp!"));
     getContentPane().add(getCategoryList(), "cell 0 0 2 0");
     getContentPane().add(getPlaylistExportTextField(), "cell 0 1");
     getContentPane().add(getPlaylistExportPathDialog(), "cell 1 1");
@@ -86,8 +84,14 @@ public class ExportPlaylistDialog extends JDialog {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          FileDialog fd = new FileDialog(ExportPlaylistDialog.this, "Exportpfad der Playliste");
-          ExportPlaylistDialog.this.getPlaylistExportTextField().setText(fd.getFile());
+          JFileChooser fd = new JFileChooser();
+          fd.setDialogTitle("Exportpfad der Playliste");
+          fd.setDialogType(JFileChooser.OPEN_DIALOG);
+          fd.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+          fd.showOpenDialog(ExportPlaylistDialog.this);
+          if (fd.getSelectedFile() != null) {
+            ExportPlaylistDialog.this.getPlaylistExportTextField().setText(fd.getSelectedFile().getName());
+          }
         }
       });
     }

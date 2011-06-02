@@ -76,6 +76,11 @@ public class MP3DataBroker {
         if (mp3Content instanceof MP3Folder) {
           mp3Folder = (MP3Folder)mp3Content;
           for (MP3File file : mp3Folder.getMp3Files()) {
+            for (MP3File dbFile : readFiles()) {
+              if(file.isEqualTo(dbFile)) {
+                file = dbFile;
+              }
+            }
             for (Category allCat : this.getCategories()) {
               if (file.getCategory(allCat.getName()) == null) {
                 file.setCategory(new Category(allCat.getName(), allCat.getIndex()));
@@ -154,5 +159,12 @@ public class MP3DataBroker {
       }
     }
     return files2Export;
+  }
+
+  /**
+   * 
+   */
+  public void clearCollection() {
+    this.mp3Collection = null;
   }
 }

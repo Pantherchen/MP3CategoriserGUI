@@ -6,12 +6,13 @@ package de.kanwas.audio.mp3;
  */
 
 import java.awt.EventQueue;
-import java.awt.FileDialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -25,6 +26,11 @@ import de.kanwas.audio.mp3.dialog.ExportPlaylistDialog;
  * @version $Revision$ ($Date$)
  */
 public class MP3Categoriser {
+  /**
+   * 
+   */
+  private static final String OPEN_MP3_FOLDER = "MP3 Ordner öffnen";
+
   /** version number */
   public static final String VER = "$Revision$";
 
@@ -36,13 +42,13 @@ public class MP3Categoriser {
 
   private JMenuItem openMenuItem;
 
-  private MP3CatMain mp3CatMain;
-
   private JMenuItem exportPlaylistMenuItem;
 
   private JMenuItem saveMenuItem;
 
   private JMenuItem exitMenuItem;
+
+  private MP3CatMain mp3Main;
 
   /**
    * @param args
@@ -65,12 +71,11 @@ public class MP3Categoriser {
 
   public MP3Categoriser() {}
 
-  public JFrame getFrame() {
+  private JFrame getFrame() {
     if (this.frame == null) {
       this.frame = new JFrame();
       this.frame.setJMenuBar(getMenuBar());
-      mp3CatMain = new MP3CatMain();
-      this.frame.add(mp3CatMain);
+      this.frame.add(getMain());
       this.frame.addWindowListener(new WindowAdapter(){
 
         @Override
@@ -83,6 +88,13 @@ public class MP3Categoriser {
       });
     }
     return this.frame;
+  }
+
+  private MP3CatMain getMain() {
+    if (mp3Main == null) {
+      mp3Main = new MP3CatMain();
+    }
+    return mp3Main;
   }
 
   private JMenuBar getMenuBar() {
@@ -118,7 +130,7 @@ public class MP3Categoriser {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          ExportPlaylistDialog dialog = new ExportPlaylistDialog(MP3Categoriser.this.getFrame(), mp3CatMain
+          ExportPlaylistDialog dialog = new ExportPlaylistDialog(MP3Categoriser.this.getFrame(), getMain()
             .getMP3DataBroker());
           dialog.setVisible(true);
 
@@ -130,14 +142,20 @@ public class MP3Categoriser {
 
   private JMenuItem getOpenMenuItem() {
     if (this.openMenuItem == null) {
-      this.openMenuItem = new JMenuItem("MP3 Ordner öffnen");
+      this.openMenuItem = new JMenuItem(OPEN_MP3_FOLDER);
       this.openMenuItem.addActionListener(new ActionListener(){
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          FileDialog fd = new FileDialog(MP3Categoriser.this.getFrame());
-          String mp3Dir = fd.getDirectory();
-          MP3Categoriser.this.mp3CatMain.setMP3Path(mp3Dir);
+          JFileChooser fd = new JFileChooser(PropertyHandler.getInstance().getMusicPath());
+          fd.setDialogType(JFileChooser.OPEN_DIALOG);
+          fd.setDialogTitle(OPEN_MP3_FOLDER);
+          fd.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+          fd.showOpenDialog(MP3Categoriser.this.getFrame());
+          File mp3Dir = fd.getSelectedFile();
+          if (mp3Dir != null) {
+            MP3Categoriser.this.getMain().setMP3Path(mp3Dir.getAbsolutePath());
+          }
         }
       });
     }
@@ -152,7 +170,7 @@ public class MP3Categoriser {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          mp3CatMain.saveContent();
+          getMain().saveContent();
         }
       });
     }

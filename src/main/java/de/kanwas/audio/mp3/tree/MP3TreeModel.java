@@ -18,14 +18,14 @@ import de.kanwas.audio.commons.MP3Folder;
  * @author $Author$
  * @version $Revision$ ($Date$)
  */
-public class Mp3TreeModel extends DefaultTreeModel {
+public class MP3TreeModel extends DefaultTreeModel {
   /** version number */
   public static final String VER = "$Revision$";
 
   /**
    * @param root
    */
-  public Mp3TreeModel(TreeNode root) {
+  public MP3TreeModel(TreeNode root) {
     super(root);
   }
 
