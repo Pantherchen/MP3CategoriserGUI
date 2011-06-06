@@ -14,7 +14,7 @@ import de.kanwas.audio.commons.MP3File;
 import de.kanwas.audio.commons.MP3Folder;
 import de.kanwas.audio.io.CategoryReader;
 import de.kanwas.audio.io.MP3FileDataSetHandler;
-import de.kanwas.audio.io.MP3FileReader;
+import de.kanwas.audio.io.MP3FileHandler;
 
 /**
  * @author $Author$
@@ -34,12 +34,14 @@ public class MP3DataBroker {
 
   private CategoryReader categoryReader = null;
 
-  private MP3FileReader mp3FileReader = null;
-
-  private List<MP3File> mp3Files;
+  private MP3FileHandler mp3FileHandler = null;
 
   private List<Category> categories;
 
+  // read from databasefile
+  private List<MP3File> mp3Files;
+
+  // shown in the tree
   private List<MP3Content> mp3Collection;
 
   public MP3DataBroker(String categoryPath, String mp3Path, String dbPath) {
@@ -64,21 +66,22 @@ public class MP3DataBroker {
 
   public void setMp3Path(String mp3Path) {
     this.mp3Path = mp3Path;
-    this.mp3FileReader = new MP3FileReader(mp3Path);
-    mp3FileReader.readFiles();
+    this.mp3FileHandler = new MP3FileHandler(mp3Path);
+    mp3FileHandler.readFiles();
   }
 
   public List<MP3Content> getMP3Collection() {
     if (mp3Collection == null) {
-      this.mp3Collection = this.mp3FileReader.getMP3Files();
+      this.mp3Collection = this.mp3FileHandler.getMP3Files();
       MP3Folder mp3Folder = null;
       for (MP3Content mp3Content : mp3Collection) {
         if (mp3Content instanceof MP3Folder) {
           mp3Folder = (MP3Folder)mp3Content;
           for (MP3File file : mp3Folder.getMp3Files()) {
             for (MP3File dbFile : readFiles()) {
-              if(file.isEqualTo(dbFile)) {
-                file = dbFile;
+              if (file.isEqualTo(dbFile)) {
+                file.setFilefromDB(dbFile);
+                break;
               }
             }
             for (Category allCat : this.getCategories()) {
@@ -140,10 +143,7 @@ public class MP3DataBroker {
     List<MP3File> files2Export = retrieveMP3FilesbyCategory(category);
     File playlistFolder = new File(playlistPath);
     if (playlistFolder != null && playlistFolder.canWrite()) {
-      for (MP3File mp3file : files2Export) {
-        // playlistFolder.
-        // mp3file.getFile().ge
-      }
+      this.mp3FileHandler.createPlaylist(files2Export, playlistFolder);
     }
   }
 

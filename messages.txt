@@ -1,0 +1,3 @@
+savechanges=Möchten Sie die Änderungen speichern?
+savechangestitle=Änderungen wurden vorgenommen
+save=Speichern

@@ -1,3 +1,3 @@
-01 - Siva.mp3;D:\Tools\Debug_Info\Musik\Smashing Pumpkins\Rotten Apples\01 - Siva.mp3;0°0;1°0;4°0;3°0
-02 - Rhinocerous.mp3;D:\Tools\Debug_Info\Musik\Smashing Pumpkins\Rotten Apples\02 - Rhinocerous.mp3;0°0;1°0;4°0;3°0
-03 - Drown.mp3;D:\Tools\Debug_Info\Musik\Smashing Pumpkins\Rotten Apples\03 - Drown.mp3;0°0;1°0;4°0;3°0
+01 - Siva.mp3;D:\Tools\Debug_Info\Musik\Smashing Pumpkins\Rotten Apples\01 - Siva.mp3;0°0;1°0;4°0;3°1
+02 - Rhinocerous.mp3;D:\Tools\Debug_Info\Musik\Smashing Pumpkins\Rotten Apples\02 - Rhinocerous.mp3;0°0;1°1;4°0;3°0
+03 - Drown.mp3;D:\Tools\Debug_Info\Musik\Smashing Pumpkins\Rotten Apples\03 - Drown.mp3;0°1;1°0;4°0;3°0

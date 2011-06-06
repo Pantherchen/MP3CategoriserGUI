@@ -17,6 +17,8 @@ import javax.swing.tree.TreePath;
 
 import net.miginfocom.swing.MigLayout;
 import de.kanwas.audio.commons.MP3File;
+import de.kanwas.audio.mp3.messages.MessageIF;
+import de.kanwas.audio.mp3.messages.MessageUtil;
 import de.kanwas.audio.mp3.table.MP3CategoryCellEditor;
 import de.kanwas.audio.mp3.table.MP3TableCellCenderer;
 import de.kanwas.audio.mp3.table.MP3TableModel;
@@ -138,8 +140,8 @@ public class MP3CatMain extends JPanel {
             }
             if (resetContent == 0) {
               saveContent();
-              // } else if (resetContent == 1) {
-              // MP3CatMain.this.getTableModel().resetMP3Data();
+            } else if (resetContent == 1) {
+              MP3CatMain.this.getTableModel().resetMP3Data();
             }
             if (resetContent == 0 || resetContent == 1) {
               MP3CatMain.this.getTableModel()
@@ -190,10 +192,10 @@ public class MP3CatMain extends JPanel {
   }
 
   private int showWantSaveDialog() {
-    String text = "Möchten Sie die Änderungen speichern?";
-    String title = "Änderungen wurden vorgenommen";
+    String text = MessageUtil.getInstance().getMessage(MessageIF.SAVECHANGES);
+    String title = MessageUtil.getInstance().getMessage(MessageIF.SAVECHANGESTITLE);
     Object[] options = new Object[3];
-    options[0] = "Speichern";
+    options[0] = MessageUtil.getInstance().getMessage(MessageIF.SAVE);
     options[1] = "Verwerfen";
     options[2] = "Abbrechen";
     int result = JOptionPane.showOptionDialog(this,
