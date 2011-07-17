@@ -5,7 +5,10 @@
 package de.kanwas.audio.mp3.table;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.table.DefaultTableModel;
 
@@ -25,6 +28,9 @@ public class MP3TableModel extends DefaultTableModel {
 
   /** version number */
   public static final String VER = "$Revision$";
+
+  private static final org.apache.commons.logging.Log logger = org.apache.commons.logging.LogFactory
+    .getLog(MP3TableModel.class);
 
   /**
    * 
@@ -60,9 +66,9 @@ public class MP3TableModel extends DefaultTableModel {
 
   /**
    * @param c
-   * @param list
+   * @param mp3Collectionlist
    */
-  public void setMP3Data(MP3Content c, List<MP3File> list) {
+  public void setMP3Data(MP3Content c, List<MP3File> mp3Collectionlist) {
     if (c instanceof MP3Folder) {
       // handle a folder
       files = ((MP3Folder)c).getMp3Files();
@@ -73,18 +79,21 @@ public class MP3TableModel extends DefaultTableModel {
     }
     if (files != null) {
       this.originalFiles = files;
-      checkDBFiles(list);
+      checkDBFiles(mp3Collectionlist);
       setData(false);
     }
   }
 
   /**
-   * @param list
+   * @param mp3CollectionList
    */
-  private void checkDBFiles(List<MP3File> list) {
-    for (MP3File file : list) {
-      if (this.files.contains(file)) {
-        this.files.set(this.files.indexOf(file), file);
+  private void checkDBFiles(List<MP3File> mp3CollectionList) {
+    for (MP3File file : mp3CollectionList) {
+      for (MP3File tableFile : files) {
+        if (tableFile.isEqualTo(file)) {
+          this.files.set(this.files.indexOf(tableFile), file);
+          break;
+        }
       }
     }
   }
@@ -102,7 +111,7 @@ public class MP3TableModel extends DefaultTableModel {
     for (MP3File mp3File : tmpFiles) {
       obj[0] = mp3File;
       for (Category category : mp3File.getCategories()) {
-        obj[getCategoryIndex(category)] = category;
+        obj[getCategoryIndex(category)] = category.isMapped();
       }
       addRow(obj);
     }
@@ -125,34 +134,39 @@ public class MP3TableModel extends DefaultTableModel {
    * @return true if something has been changed, else false
    */
   public boolean isDirty() {
+    if (getDirtyMP3File() == null) {
+      return false;
+    }
+    return true;
+  }
+
+  private Map<MP3File, List<Category>> getDirtyMP3File() {
     Object o = null;
-    Object cat = null;
     MP3File mp3File = null;
-    Category mp3Cat = null;
-    Category category = null;
+    Map<MP3File, List<Category>> dirtyObjects = new HashMap<MP3File, List<Category>>();
+    List<Category> dirtyCategories = null;
     for (int i = 0; i < getRowCount(); i++) {
       o = getValueAt(i, 0);
       if (o instanceof MP3File) {
         mp3File = (MP3File)o;
-        for (int j = _MP3TABLE_HEADER_GENERAL_COLUMNS; j < getColumnCount(); j++) {
-          cat = getValueAt(i, j);
-          if (cat instanceof Category) {
-            category = (Category)cat;
-            mp3Cat = mp3File.getCategory(category.getName());
-            if (category != null && mp3Cat == null || (mp3Cat != null && category.isMapped() != mp3Cat.isMapped())) {
-              return true;
+        for (Category c : mp3File.getCategories()) {
+          if (c.isDirty()) {
+            logger.debug("Add category " + c + " as dirty");
+            if (dirtyCategories == null) {
+              dirtyCategories = new ArrayList<Category>();
             }
-          } else if (cat instanceof Boolean) {
-            boolean selected = (Boolean)cat;
-            category = mp3File.getCategoryByIndex(j);
-            if (category != null && category.isMapped() != selected) {
-              return true;
-            }
+            dirtyCategories.add(c);
           }
+        }
+        if (dirtyCategories != null) {
+          dirtyObjects.put(mp3File, dirtyCategories);
         }
       }
     }
-    return false;
+    if (dirtyObjects.size() == 0) {
+      return null;
+    }
+    return dirtyObjects;
   }
 
   /**
@@ -165,7 +179,21 @@ public class MP3TableModel extends DefaultTableModel {
   /**
    * @return the current content of {@link MP3File}
    */
-  public List<MP3File> getMP3Files() {
+  public List<MP3File> savingMP3Files() {
+    Map<MP3File, List<Category>> dirtyObjects = getDirtyMP3File();
+    if (dirtyObjects == null) {
+      return this.files;
+    }
+    boolean selected = false;
+    Category cat = null;
+    for (Entry<MP3File, List<Category>> file : dirtyObjects.entrySet()) {
+      for (Category c : file.getValue()) {
+        cat = file.getKey().getCategoryByIndex(c.getIndex());
+        selected = !cat.isMapped();
+        cat.setMapped(selected);
+        file.getKey().setCategory(cat);
+      }
+    }
     return this.files;
   }
 

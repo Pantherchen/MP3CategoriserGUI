@@ -24,6 +24,9 @@ public class MP3DataBroker {
   /** version number */
   public static final String VER = "$Revision$";
 
+  private static final org.apache.commons.logging.Log logger = org.apache.commons.logging.LogFactory
+    .getLog(MP3DataBroker.class);
+
   private String categoryPath;
 
   private String mp3Path;
@@ -45,7 +48,7 @@ public class MP3DataBroker {
   private List<MP3Content> mp3Collection;
 
   public MP3DataBroker(String categoryPath, String mp3Path, String dbPath) {
-    this.setMp3Path(mp3Path);
+    this.setMP3Path(mp3Path);
     this.setCategoryPath(categoryPath);
     this.setDbPath(dbPath);
   }
@@ -60,11 +63,11 @@ public class MP3DataBroker {
     this.categoryReader.readCategories();
   }
 
-  public String getMp3Path() {
+  public String getMP3Path() {
     return this.mp3Path;
   }
 
-  public void setMp3Path(String mp3Path) {
+  public void setMP3Path(String mp3Path) {
     this.mp3Path = mp3Path;
     this.mp3FileHandler = new MP3FileHandler(mp3Path);
     mp3FileHandler.readFiles();
@@ -74,21 +77,23 @@ public class MP3DataBroker {
     if (mp3Collection == null) {
       this.mp3Collection = this.mp3FileHandler.getMP3Files();
       MP3Folder mp3Folder = null;
+      // fill List of MP3Files
+      this.mp3Files = new ArrayList<MP3File>();
       for (MP3Content mp3Content : mp3Collection) {
         if (mp3Content instanceof MP3Folder) {
           mp3Folder = (MP3Folder)mp3Content;
           for (MP3File file : mp3Folder.getMp3Files()) {
-            for (MP3File dbFile : readFiles()) {
-              if (file.isEqualTo(dbFile)) {
-                file.setFilefromDB(dbFile);
-                break;
-              }
+            if (!mp3Files.contains(file)) {
+              this.mp3Files.add(file);
             }
-            for (Category allCat : this.getCategories()) {
-              if (file.getCategory(allCat.getName()) == null) {
-                file.setCategory(new Category(allCat.getName(), allCat.getIndex()));
-              }
-            }
+          }
+        }
+      }
+      readFiles();
+      for (MP3File file : this.mp3Files) {
+        for (Category allCat : this.getCategories()) {
+          if (file.getCategory(allCat.getName()) == null) {
+            file.setCategory(new Category(allCat.getName(), allCat.getIndex()));
           }
         }
       }
@@ -111,7 +116,15 @@ public class MP3DataBroker {
       return false;
     }
     mergeFiles(files);
-    return this.dbHandler.write2DB(files);
+    if (this.dbHandler.write2DB(this.mp3Files)) {
+      for (MP3File f : this.mp3Files) {
+        for (Category c : f.getCategories()) {
+          c.setDirty(false);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public List<Category> getCategories() {
@@ -121,40 +134,59 @@ public class MP3DataBroker {
     return this.categories;
   }
 
-  public List<MP3File> readFiles() {
+  public List<MP3File> getMP3CollectionList() {
     if (this.mp3Files == null) {
-      this.mp3Files = this.dbHandler.readFilesFromDB();
+      getMP3Collection();
     }
     return this.mp3Files;
   }
 
+  private void readFiles() {
+    List<MP3File> files = this.dbHandler.readFilesFromDB();
+    mergeFiles(files);
+  }
+
   private void mergeFiles(List<MP3File> files) {
-    for (MP3File file : files) {
-      if (!this.mp3Files.contains(file)) {
-        this.mp3Files.add(file);
+    MP3File foundfile = null;
+    for (MP3File f : files) {
+      foundfile = containsObject(f);
+      if (foundfile != null) {
+        logger.debug("found file: " + f.getFile().getName());
+        this.mp3Files.set(this.mp3Files.indexOf(foundfile), f);
       }
     }
   }
 
+  private MP3File containsObject(MP3File file) {
+    for (MP3File f : this.mp3Files) {
+      if (f.isEqualTo(file)) {
+        return f;
+      }
+    }
+    return null;
+  }
+
   /**
-   * @param category
+   * @param exportcategories
    */
-  public void exportPlaylist(Category category, String playlistPath) {
-    List<MP3File> files2Export = retrieveMP3FilesbyCategory(category);
+  public void exportPlaylist(List<Category> exportcategories, String playlistPath) {
+    List<MP3File> files2Export = retrieveMP3FilesbyCategory(exportcategories);
     File playlistFolder = new File(playlistPath);
     if (playlistFolder != null && playlistFolder.canWrite()) {
       this.mp3FileHandler.createPlaylist(files2Export, playlistFolder);
     }
   }
 
-  private List<MP3File> retrieveMP3FilesbyCategory(Category category) {
+  private List<MP3File> retrieveMP3FilesbyCategory(List<Category> mp3Categories) {
     List<MP3File> files2Export = new ArrayList<MP3File>();
     Category cat = null;
     for (MP3File file : this.mp3Files) {
-      cat = file.getCategory(category.getName());
-      if (cat != null && cat.isMapped()) {
-        if (!files2Export.contains(file)) {
-          files2Export.add(file);
+      for (Category c : mp3Categories) {
+        cat = file.getCategory(c.getName());
+        if (cat != null && cat.isMapped()) {
+          if (!files2Export.contains(file)) {
+            files2Export.add(file);
+          }
         }
       }
     }

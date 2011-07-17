@@ -6,7 +6,6 @@ package de.kanwas.audio.mp3.tree;
 
 import java.util.List;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
@@ -30,34 +29,53 @@ public class MP3TreeModel extends DefaultTreeModel {
   }
 
   public void setMP3Data(List<MP3Content> collection) {
-
-    DefaultMutableTreeNode parent = (DefaultMutableTreeNode)getRoot();
-    DefaultMutableTreeNode node = null;
-    MP3FolderNode folderNode = null;
-    MP3Folder folder = null;
-    for (MP3Content content : collection) {
-      if (content instanceof MP3Folder) {
-        folder = (MP3Folder)content;
-        folderNode = new MP3FolderNode(folder);
-        if (!containsNode(parent, folderNode)) {
-          for (MP3File file : folder.getMp3Files()) {
-            node = new Mp3FileNode(file, folderNode);
-            folderNode.addMP3File(file);
-            folderNode.add(node);
-          }
-          parent.add(folderNode);
+    // looking for root node
+    MP3FolderNode rootNode = null;
+    for (MP3Content c : collection) {
+      if (c instanceof MP3Folder) {
+        MP3Folder f = (MP3Folder)c;
+        if (f.getParentFolder() == null) {
+          this.root = rootNode = new MP3FolderNode(f);
+          break;
         }
       }
     }
-  }
-
-  private boolean containsNode(DefaultMutableTreeNode parent, DefaultMutableTreeNode node) {
-    for (int i = 0; i < parent.getChildCount(); i++) {
-      if (parent.getChildAt(i).equals(node)) {
-        return true;
+    // looking for the child of the root node and take this as parent
+    MP3FolderNode parent = null;
+    if (rootNode != null && rootNode.getFolder() != null) {
+      for (MP3Content c : collection) {
+        if (c instanceof MP3Folder) {
+          MP3Folder f = (MP3Folder)c;
+          if (rootNode.getFolder().equals(f.getParentFolder())) {
+            parent = new MP3FolderNode(f);
+            rootNode.add(parent);
+            break;
+          }
+        }
       }
     }
-    return false;
+    createTree(parent);
+  }
+
+  /**
+   * 
+   */
+  private void createTree(MP3FolderNode parent) {
+    if (parent == null || parent.getFolder() == null) {
+      return;
+    }
+    for (MP3Content c : parent.getFolder().getMp3Content()) {
+      if (c instanceof MP3Folder) {
+        MP3Folder currentFolder = (MP3Folder)c;
+        MP3FolderNode mp3FolderNode = new MP3FolderNode(currentFolder);
+        parent.add(mp3FolderNode);
+        createTree(mp3FolderNode);
+      } else if (c instanceof MP3File) {
+        MP3File file = (MP3File)c;
+        Mp3FileNode mp3fileNode = new Mp3FileNode(file, parent);
+        parent.add(mp3fileNode);
+      }
+    }
   }
 
 }

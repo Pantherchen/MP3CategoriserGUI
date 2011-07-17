@@ -1,3 +1,6 @@
-savechanges=Möchten Sie die Änderungen speichern?
-savechangestitle=Änderungen wurden vorgenommen
-save=Speichern
+de.kanwas.audio.mp3.MP3CatMain.savechanges=Möchten Sie die Änderungen speichern?
+de.kanwas.audio.mp3.MP3CatMain.savechangestitle=Änderungen wurden vorgenommen
+de.kanwas.audio.mp3.MP3CatMain.save=Speichern
+de.kanwas.audio.mp3.MP3CatMain.discard=Verwerfen
+de.kanwas.audio.mp3.MP3CatMain.cancel=Abbrechen
+de.kanwas.audio.mp3.MP3CatMain.RootNodeName=MP3 Sammlung

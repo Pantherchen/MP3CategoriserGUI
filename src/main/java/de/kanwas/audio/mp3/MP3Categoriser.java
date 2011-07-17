@@ -8,6 +8,8 @@ package de.kanwas.audio.mp3;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -18,6 +20,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
 
 import de.kanwas.audio.mp3.dialog.ExportPlaylistDialog;
 
@@ -80,9 +83,11 @@ public class MP3Categoriser {
 
         @Override
         public void windowClosing(WindowEvent e) {
-          super.windowClosing(e);
-          MP3Categoriser.this.frame.setVisible(false);
-          System.exit(0);
+          if (checkDirty()) {
+            super.windowClosing(e);
+            MP3Categoriser.this.frame.setVisible(false);
+            System.exit(0);
+          }
         }
 
       });
@@ -109,6 +114,7 @@ public class MP3Categoriser {
   private JMenu getFileMenu() {
     if (this.fileMenu == null) {
       this.fileMenu = new JMenu("Datei");
+      this.fileMenu.setMnemonic(KeyEvent.VK_D);
       this.fileMenu.add(getOpenMenuItem());
       this.fileMenu.add(new JSeparator());
       this.fileMenu.add(getExportPlaylistMenuItem());
@@ -126,14 +132,18 @@ public class MP3Categoriser {
   private JMenuItem getExportPlaylistMenuItem() {
     if (exportPlaylistMenuItem == null) {
       this.exportPlaylistMenuItem = new JMenuItem("Export Playlist");
+      this.exportPlaylistMenuItem.setMnemonic(KeyEvent.VK_E);
+      this.exportPlaylistMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.ALT_DOWN_MASK));
       this.exportPlaylistMenuItem.addActionListener(new ActionListener(){
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          ExportPlaylistDialog dialog = new ExportPlaylistDialog(MP3Categoriser.this.getFrame(), getMain()
-            .getMP3DataBroker());
-          dialog.setVisible(true);
-
+          if (checkDirty()) {
+            ExportPlaylistDialog dialog = new ExportPlaylistDialog(MP3Categoriser.this.getFrame(), getMain()
+              .getMP3DataBroker());
+            dialog.setVisible(true);
+            dialog.setLocationRelativeTo(MP3Categoriser.this.getFrame());
+          }
         }
       });
     }
@@ -143,18 +153,22 @@ public class MP3Categoriser {
   private JMenuItem getOpenMenuItem() {
     if (this.openMenuItem == null) {
       this.openMenuItem = new JMenuItem(OPEN_MP3_FOLDER);
+      this.openMenuItem.setMnemonic(KeyEvent.VK_O);
+      this.openMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.ALT_DOWN_MASK));
       this.openMenuItem.addActionListener(new ActionListener(){
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          JFileChooser fd = new JFileChooser(PropertyHandler.getInstance().getMusicPath());
-          fd.setDialogType(JFileChooser.OPEN_DIALOG);
-          fd.setDialogTitle(OPEN_MP3_FOLDER);
-          fd.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-          fd.showOpenDialog(MP3Categoriser.this.getFrame());
-          File mp3Dir = fd.getSelectedFile();
-          if (mp3Dir != null) {
-            MP3Categoriser.this.getMain().setMP3Path(mp3Dir.getAbsolutePath());
+          if (checkDirty()) {
+            JFileChooser fd = new JFileChooser(PropertyHandler.getInstance().getMusicPath());
+            fd.setDialogType(JFileChooser.OPEN_DIALOG);
+            fd.setDialogTitle(OPEN_MP3_FOLDER);
+            fd.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            fd.showOpenDialog(MP3Categoriser.this.getFrame());
+            File mp3Dir = fd.getSelectedFile();
+            if (mp3Dir != null) {
+              MP3Categoriser.this.getMain().setMP3Path(mp3Dir.getAbsolutePath());
+            }
           }
         }
       });
@@ -165,7 +179,8 @@ public class MP3Categoriser {
   private JMenuItem getSaveMenuItem() {
     if (this.saveMenuItem == null) {
       this.saveMenuItem = new JMenuItem("Zuordnungen speichern ");
-      this.saveMenuItem.setMnemonic('s');
+      this.saveMenuItem.setMnemonic(KeyEvent.VK_S);
+      this.saveMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.ALT_DOWN_MASK));
       this.saveMenuItem.addActionListener(new ActionListener(){
 
         @Override
@@ -181,15 +196,29 @@ public class MP3Categoriser {
   private JMenuItem getExitMenuItem() {
     if (exitMenuItem == null) {
       exitMenuItem = new JMenuItem("Beenden");
-      exitMenuItem.setMnemonic('x');
+      exitMenuItem.setMnemonic(KeyEvent.VK_Q);
+      exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.ALT_DOWN_MASK));
       exitMenuItem.addActionListener(new ActionListener(){
 
         @Override
         public void actionPerformed(ActionEvent e) {
-          getFrame().dispose();
+          if (checkDirty()) {
+            getFrame().dispose();
+          }
         }
       });
     }
     return exitMenuItem;
+  }
+
+  /**
+   * @return true to continue with the next operation, else false
+   */
+  private boolean checkDirty() {
+    if (getMain().isDirty()) {
+      int option = getMain().showWantSaveDialog();
+      return getMain().checkUserSelection(option, getMain().getCurrentTreeSelection());
+    }
+    return true;
   }
 }

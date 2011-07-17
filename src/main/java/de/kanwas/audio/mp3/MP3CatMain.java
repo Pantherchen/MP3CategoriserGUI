@@ -42,7 +42,8 @@ public class MP3CatMain extends JPanel {
   /**
    * 
    */
-  private static final String ROOT_NODE_NAME = "MP3 Sammlung";
+  private static final String ROOT_NODE_NAME = MessageUtil.getInstance().getMessage(MP3CatMain.class,
+                                                                                    MessageIF.ROOT_NODE_NAME);
 
   private JTree dirTree;
 
@@ -75,7 +76,7 @@ public class MP3CatMain extends JPanel {
   }
 
   public void setMP3Path(String mp3Path) {
-    this.getMP3DataBroker().setMp3Path(mp3Path);
+    this.getMP3DataBroker().setMP3Path(mp3Path);
     clearTreeModel();
     getDirTree().setModel(getTreeModel());
     getTreeModel().reload();
@@ -134,24 +135,40 @@ public class MP3CatMain extends JPanel {
           Object o = path.getLastPathComponent();
           if (o instanceof MP3ContentNode) {
             MP3ContentNode c = (MP3ContentNode)o;
-            int resetContent = 0;
+            int resetContent = -1;
             if (MP3CatMain.this.getTableModel().isDirty()) {
               resetContent = showWantSaveDialog();
             }
-            if (resetContent == 0) {
-              saveContent();
-            } else if (resetContent == 1) {
-              MP3CatMain.this.getTableModel().resetMP3Data();
-            }
-            if (resetContent == 0 || resetContent == 1) {
-              MP3CatMain.this.getTableModel()
-                .setMP3Data(c.getContent(), MP3CatMain.this.getMP3DataBroker().readFiles());
+            if (checkUserSelection(resetContent, e.getOldLeadSelectionPath())) {
+              MP3CatMain.this.getTableModel().setMP3Data(c.getContent(),
+                                                         MP3CatMain.this.getMP3DataBroker().getMP3CollectionList());
             }
           }
         }
+
       });
     }
     return this.dirTree;
+  }
+
+  /**
+   * @param resetContent
+   * @param oldTreePath
+   * @return continue, true to define continue with the next operation, else false
+   */
+  public boolean checkUserSelection(int resetContent, TreePath oldTreePath) {
+    if (resetContent == 0) {
+      // save
+      saveContent();
+    } else if (resetContent == 1) {
+      // reset
+      MP3CatMain.this.getTableModel().resetMP3Data();
+    } else if (resetContent == 2) {
+      // cancel
+      MP3CatMain.this.getDirTree().setSelectionPath(oldTreePath);
+      return false;
+    }
+    return true;
   }
 
   private MP3TreeModel getTreeModel() {
@@ -177,6 +194,8 @@ public class MP3CatMain extends JPanel {
       this.mp3Table.setCellSelectionEnabled(true);
       this.mp3Table.setAutoscrolls(true);
       this.mp3Table.setAutoCreateRowSorter(true);
+      this.mp3Table.getTableHeader().setReorderingAllowed(false);
+      this.mp3Table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
       this.mp3Table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
       for (int i = 0; i < this.mp3Table.getColumnCount(); i++) {
@@ -191,13 +210,13 @@ public class MP3CatMain extends JPanel {
     return mp3Table;
   }
 
-  private int showWantSaveDialog() {
-    String text = MessageUtil.getInstance().getMessage(MessageIF.SAVECHANGES);
-    String title = MessageUtil.getInstance().getMessage(MessageIF.SAVECHANGESTITLE);
+  public int showWantSaveDialog() {
+    String text = MessageUtil.getInstance().getMessage(getClass(), MessageIF.SAVECHANGES);
+    String title = MessageUtil.getInstance().getMessage(getClass(), MessageIF.SAVECHANGESTITLE);
     Object[] options = new Object[3];
-    options[0] = MessageUtil.getInstance().getMessage(MessageIF.SAVE);
-    options[1] = "Verwerfen";
-    options[2] = "Abbrechen";
+    options[0] = MessageUtil.getInstance().getMessage(getClass(), MessageIF.SAVE);
+    options[1] = MessageUtil.getInstance().getMessage(getClass(), MessageIF.DISCARD);
+    options[2] = MessageUtil.getInstance().getMessage(getClass(), MessageIF.CANCEL);
     int result = JOptionPane.showOptionDialog(this,
                                               text,
                                               title,
@@ -214,9 +233,17 @@ public class MP3CatMain extends JPanel {
    * 
    */
   public void saveContent() {
-    List<MP3File> files = getTableModel().getMP3Files();
+    List<MP3File> files = getTableModel().savingMP3Files();
     this.getMP3DataBroker().writeFiles(files);
 
+  }
+
+  public boolean isDirty() {
+    return getTableModel().isDirty();
+  }
+
+  public TreePath getCurrentTreeSelection() {
+    return getDirTree().getSelectionPath();
   }
 
   private MP3TableModel getTableModel() {

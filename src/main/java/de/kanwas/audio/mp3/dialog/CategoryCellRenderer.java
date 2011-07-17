@@ -16,7 +16,7 @@ import de.kanwas.audio.commons.Category;
  * @author $Author$
  * @version $Revision$ ($Date$)
  */
-public class CategoryCellRenderer implements ListCellRenderer {
+public class CategoryCellRenderer extends JCheckBox implements ListCellRenderer {
   /** version number */
   public static final String VER = "$Revision$";
 
@@ -31,13 +31,16 @@ public class CategoryCellRenderer implements ListCellRenderer {
                                                 int index,
                                                 boolean isSelected,
                                                 boolean cellHasFocus) {
-    if (value instanceof Category) {
-      Category category = (Category)value;
-      JCheckBox chkBox = new JCheckBox();
-      chkBox.setName(category.getName());
-      return chkBox;
+    if (value instanceof Object[]) {
+      Object[] object = (Object[])value;
+      Category category = (Category)object[1];
+      JCheckBox checkBox = (JCheckBox)object[0];
+      if (checkBox != null) {
+        this.setSelected(checkBox.isSelected());
+      }
+      this.setText(category.getName());
     }
-    return null;
+    return this;
   }
 
 }

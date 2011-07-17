@@ -25,6 +25,9 @@ public class MP3TableCellCenderer extends DefaultTableCellRenderer implements Ta
   /** version number */
   public static final String VER = "$Revision$";
 
+  private static final org.apache.commons.logging.Log logger = org.apache.commons.logging.LogFactory
+    .getLog(MP3TableCellCenderer.class);
+
   @Override
   public Component getTableCellRendererComponent(JTable table,
                                                  Object value,
@@ -51,20 +54,31 @@ public class MP3TableCellCenderer extends DefaultTableCellRenderer implements Ta
       return textField;
     }
     boolean selected = false;
-    Object val = table.getValueAt(row, column);
-    if (val instanceof Category) {
-      Category category = (Category)val;
-      selected = category.isMapped();
-    } else if (val instanceof Boolean) {
-      selected = (Boolean)val;
+    Object val = table.getValueAt(row, 0);
+    MP3File mp3File = null;
+    Category mp3Cat = null;
+    if (val instanceof MP3File) {
+      mp3File = (MP3File)val;
+      mp3Cat = mp3File.getCategoryByIndex(column - MP3TableModel.getIndexGeneralColumns());
+      if (mp3Cat != null) {
+        selected = mp3Cat.isMapped();
+        // logger.debug("file " + mp3File.getFile().getName() + ", category: " + mp3Cat.getName() + " selected: "
+        // + selected + ", row: " + row + ", column: " + column + ", CatIndex: " + mp3Cat.getIndex());
+      } else {
+        if (column != 3) {
+          logger.error("Category is null: " + mp3File.getFile().getName() + ", index: " + column);
+        }
+      }
+    } else {
+      logger.error("not a mp3 file: " + val + ", in row: " + row);
     }
     JCheckBox cb = new JCheckBox();
     cb.setHorizontalAlignment(SwingConstants.CENTER);
-    cb.setSelected(selected);
     TableColumn col = table.getTableHeader().getColumnModel().getColumn(column);
     if (col != null && MP3TableModel.UNKNOWN.equals(col.getIdentifier())) {
       cb.setEnabled(false);
     } else {
+      cb.setSelected(selected);
       setEnabled(true);
     }
     return cb;

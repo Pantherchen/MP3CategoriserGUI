@@ -18,4 +18,10 @@ public interface MessageIF {
 
   public static final String SAVE = "save";
 
+  public static final String ROOT_NODE_NAME = "RootNodeName";
+
+  public static final String DISCARD = "discard";
+
+  public static final String CANCEL = "cancel";
+
 }

@@ -42,11 +42,11 @@ public class MessageUtil {
     }
   }
 
-  public String getMessage(String name) {
+  public String getMessage(Class<?> classname, String name) {
     if (messages == null) {
       return "";
     }
-    return messages.getProperty(name);
+    return messages.getProperty(classname.getName() + "." + name);
   }
 
 }
