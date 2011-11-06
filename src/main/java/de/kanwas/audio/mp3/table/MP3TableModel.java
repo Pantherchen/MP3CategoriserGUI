@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.swing.table.DefaultTableModel;
 
@@ -112,6 +111,9 @@ public class MP3TableModel extends DefaultTableModel {
       obj[0] = mp3File;
       for (Category category : mp3File.getCategories()) {
         obj[getCategoryIndex(category)] = category.isMapped();
+        if (category.isDirty() && originalFiles) {
+          category.setDirty(false);
+        }
       }
       addRow(obj);
     }
@@ -140,11 +142,11 @@ public class MP3TableModel extends DefaultTableModel {
     return true;
   }
 
-  private Map<MP3File, List<Category>> getDirtyMP3File() {
+  private Map<Integer, List<Integer>> getDirtyMP3File() {
     Object o = null;
     MP3File mp3File = null;
-    Map<MP3File, List<Category>> dirtyObjects = new HashMap<MP3File, List<Category>>();
-    List<Category> dirtyCategories = null;
+    Map<Integer, List<Integer>> dirtyObjects = new HashMap<Integer, List<Integer>>();
+    List<Integer> dirtyCategories = null;
     for (int i = 0; i < getRowCount(); i++) {
       o = getValueAt(i, 0);
       if (o instanceof MP3File) {
@@ -153,13 +155,13 @@ public class MP3TableModel extends DefaultTableModel {
           if (c.isDirty()) {
             logger.debug("Add category " + c + " as dirty");
             if (dirtyCategories == null) {
-              dirtyCategories = new ArrayList<Category>();
+              dirtyCategories = new ArrayList<Integer>();
             }
-            dirtyCategories.add(c);
+            dirtyCategories.add(c.getIndex());
           }
         }
         if (dirtyCategories != null) {
-          dirtyObjects.put(mp3File, dirtyCategories);
+          dirtyObjects.put(i, dirtyCategories);
         }
       }
     }
@@ -180,20 +182,23 @@ public class MP3TableModel extends DefaultTableModel {
    * @return the current content of {@link MP3File}
    */
   public List<MP3File> savingMP3Files() {
-    Map<MP3File, List<Category>> dirtyObjects = getDirtyMP3File();
+    Map<Integer, List<Integer>> dirtyObjects = getDirtyMP3File();
     if (dirtyObjects == null) {
       return this.files;
     }
-    boolean selected = false;
-    Category cat = null;
-    for (Entry<MP3File, List<Category>> file : dirtyObjects.entrySet()) {
-      for (Category c : file.getValue()) {
-        cat = file.getKey().getCategoryByIndex(c.getIndex());
-        selected = !cat.isMapped();
-        cat.setMapped(selected);
-        file.getKey().setCategory(cat);
-      }
-    }
+    // Category cat = null;
+    // MP3File mp3File = null;
+    // boolean selected = false;
+    // for (Entry<Integer, List<Integer>> file : dirtyObjects.entrySet()) {
+    // mp3File = (MP3File)getValueAt(file.getKey(), 0);
+    // for (Integer c : file.getValue()) {
+    // cat = mp3File.getCategoryByIndex(c);
+    // selected = (Boolean)getValueAt(file.getKey(), c);
+    // cat.setMapped(selected);
+    // cat.setDirty(false);
+    // mp3File.setCategory(cat);
+    // }
+    // }
     return this.files;
   }
 
